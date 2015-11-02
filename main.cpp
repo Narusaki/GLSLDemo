@@ -185,15 +185,15 @@ void keyboardFunc(unsigned char key, int x, int y)
 		break;
 	case '1':
 		glBindVertexArray(VAOs[Model1]);
-		glBindBuffer(GL_ARRAY_BUFFER, Buffers[Vertices1]);
-		glVertexAttribPointer(vPosition, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-		glEnableVertexAttribArray(vPosition);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffers[Faces1]);
-
-		glBindBuffer(GL_ARRAY_BUFFER, Buffers[Normals1]);
-		glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-		glEnableVertexAttribArray(vNormal);
+// 		glBindBuffer(GL_ARRAY_BUFFER, Buffers[Vertices1]);
+// 		glVertexAttribPointer(vPosition, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+// 		glEnableVertexAttribArray(vPosition);
+// 
+// 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffers[Faces1]);
+// 
+// 		glBindBuffer(GL_ARRAY_BUFFER, Buffers[Normals1]);
+// 		glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+// 		glEnableVertexAttribArray(vNormal);
 
 		scaleMatrix[0] = 1.0 / model1.scale;
 		scaleMatrix[5] = 1.0 / model1.scale;
@@ -207,15 +207,15 @@ void keyboardFunc(unsigned char key, int x, int y)
 	case '2':
 		if (model2.vertices.empty()) return;
 		glBindVertexArray(VAOs[Model2]);
-		glBindBuffer(GL_ARRAY_BUFFER, Buffers[Vertices2]);
-		glVertexAttribPointer(vPosition, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-		glEnableVertexAttribArray(vPosition);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffers[Faces2]);
-
-		glBindBuffer(GL_ARRAY_BUFFER, Buffers[Normals2]);
-		glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-		glEnableVertexAttribArray(vNormal);
+// 		glBindBuffer(GL_ARRAY_BUFFER, Buffers[Vertices2]);
+// 		glVertexAttribPointer(vPosition, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+// 		glEnableVertexAttribArray(vPosition);
+// 
+// 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffers[Faces2]);
+// 
+// 		glBindBuffer(GL_ARRAY_BUFFER, Buffers[Normals2]);
+// 		glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+// 		glEnableVertexAttribArray(vNormal);
 
 		scaleMatrix[0] = 1.0 / model2.scale;
 		scaleMatrix[5] = 1.0 / model2.scale;
@@ -278,7 +278,7 @@ int main(int argc, char** argv)
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
-	glutInitWindowSize(512, 512);
+	glutInitWindowSize(640, 480);
 	glutInitContextVersion(4, 3);
 	glutInitContextProfile(GLUT_CORE_PROFILE);
 	winHandle = glutCreateWindow("GLSL example by Narusaki");
