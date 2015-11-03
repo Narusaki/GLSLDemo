@@ -23,10 +23,9 @@ GLuint Buffers[NumBuffers];
 const GLuint NumVertices = 6;
 
 int winHandle = -1;
-GLint mvMatrixLoc, projMatrixLoc, scaleMatrixLoc, normalTransferMatrixLoc;
+GLint mvMatrixLoc, projMatrixLoc, scaleMatrixLoc;
 GLfloat zTheta = 0.0;
 GLfloat mvMatrix[16], projMatrix[16], scaleMatrix[16];
-GLfloat normalTransferMatrix[9];
 
 // input model
 Model model1, model2;
@@ -93,7 +92,6 @@ void init(void)
 		mvMatrix[i] = (i / 4 == i % 4 ? 1.0 : 0.0);
 		projMatrix[i] = (i / 4 == i % 4 ? 1.0 : 0.0);
 		if (i >= 9) continue;
-		normalTransferMatrix[i] = (i / 3 == i % 3 ? 1.0 : 0.0);
 	}
 
 	scaleMatrix[0] = 1.0 / model1.scale;
@@ -107,11 +105,9 @@ void init(void)
 	mvMatrixLoc = glGetUniformLocation(program, "mvMatrix");
 	projMatrixLoc = glGetUniformLocation(program, "projMatrix");
 	scaleMatrixLoc = glGetUniformLocation(program, "scaleMatrix");
-	normalTransferMatrixLoc = glGetUniformLocation(program, "normalTransferMatrix");
 	glUniformMatrix4fv(mvMatrixLoc, 1, GL_FALSE, mvMatrix);
 	glUniformMatrix4fv(projMatrixLoc, 1, GL_FALSE, projMatrix);
 	glUniformMatrix4fv(scaleMatrixLoc, 1, GL_FALSE, scaleMatrix);
-	glUniformMatrix4fv(normalTransferMatrixLoc, 1, GL_FALSE, normalTransferMatrix);
 
 	// set light parameters
 
@@ -155,11 +151,7 @@ void display(void)
 	mvMatrix[0] = cos(zTheta); mvMatrix[1] = sin(zTheta);
 	mvMatrix[4] = -sin(zTheta); mvMatrix[5] = cos(zTheta);
 
-	normalTransferMatrix[0] = cos(zTheta); normalTransferMatrix[1] = sin(zTheta);
-	normalTransferMatrix[3] = -sin(zTheta); normalTransferMatrix[4] = cos(zTheta);
-
 	glUniformMatrix4fv(mvMatrixLoc, 1, GL_FALSE, mvMatrix);
-	glUniformMatrix3fv(normalTransferMatrixLoc, 1, GL_FALSE, normalTransferMatrix);
 
 	/*glBindVertexArray(VAOs[Model1]);*/
 	/*glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);*/

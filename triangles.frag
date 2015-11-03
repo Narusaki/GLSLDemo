@@ -31,10 +31,7 @@ void main()
 	if (diffuse == 0.0) specular = 0.0;
 	else specular = pow(specular, Shininess) * Strength;
 
-	vec3 scatteredLight = Ambient + Diffuse * diffuse * attenuation; 
-	vec3 reflectedLight = Specular * specular * attenuation; 
-
-	vec3 rgb = min(vec3(1.0, 1.0, 1.0) * scatteredLight + reflectedLight, vec3(1.0));
+	vec3 rgb = min(Ambient + Diffuse * diffuse * attenuation + Specular * specular * attenuation, vec3(1.0));
 	
 	fColor = vec4(rgb, 1.0);
 }
