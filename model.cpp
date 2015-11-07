@@ -74,6 +74,8 @@ void Model::calcNormals()
 {
 	vector<int> degrees(vertices.size() / 3, 0);
 	normals.resize(vertices.size(), 0.0);
+	faceVerts.resize(faces.size() * 3, 0.0);
+	faceNormals.resize(faces.size() * 3, 0.0);
 	for (unsigned i = 0; i < faces.size(); i+=3)
 	{
 		GLuint v0 = faces[i], v1 = faces[i + 1], v2 = faces[i + 2];
@@ -85,13 +87,24 @@ void Model::calcNormals()
 		GLfloat vec0x = x1 - x0, vec0y = y1 - y0, vec0z = z1 - z0;
 		GLfloat vec1x = x2 - x0, vec1y = y2 - y0, vec1z = z2 - z0;
 
-		GLfloat nx = vec0y*vec1z - vec1y*vec0z, ny = vec0z*vec1x - vec1z*vec0x, nz = vec0x*vec1y - vec1x*vec0y;
-		GLfloat len = sqrt(nx*nx + ny*ny + nz*nz);
-		nx /= len; ny /= len; nz /= len;
+		GLfloat n[3];
+		n[0] = vec0y*vec1z - vec1y*vec0z, n[1] = vec0z*vec1x - vec1z*vec0x, n[2] = vec0x*vec1y - vec1x*vec0y;
+		GLfloat len = sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
+		n[0] /= len; n[1] /= len; n[2] /= len;
 
-		normals[3 * v0] += nx; normals[3 * v0 + 1] += ny; normals[3 * v0 + 2] += nz;
-		normals[3 * v1] += nx; normals[3 * v1 + 1] += ny; normals[3 * v1 + 2] += nz;
-		normals[3 * v2] += nx; normals[3 * v2 + 1] += ny; normals[3 * v2 + 2] += nz;
+		for (int j = 0; j < 3; ++j)
+		{
+			faceVerts[i * 3 + j] = vertices[3 * v0 + j];
+			faceVerts[i * 3 + 3 + j] = vertices[3 * v1 + j];
+			faceVerts[i * 3 + 6 + j] = vertices[3 * v2 + j];
+			faceNormals[i * 3 + j] = n[j]; 
+			faceNormals[i * 3 + 3 + j] = n[j]; 
+			faceNormals[i * 3 + 6 + j] = n[j];
+		}
+		
+		normals[3 * v0] += n[0]; normals[3 * v0 + 1] += n[1]; normals[3 * v0 + 2] += n[2];
+		normals[3 * v1] += n[0]; normals[3 * v1 + 1] += n[1]; normals[3 * v1 + 2] += n[2];
+		normals[3 * v2] += n[0]; normals[3 * v2 + 1] += n[1]; normals[3 * v2 + 2] += n[2];
 	}
 	for (unsigned i = 0; i < vertices.size(); i += 3)
 	{

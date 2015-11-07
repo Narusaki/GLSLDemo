@@ -14,7 +14,7 @@ public:
 	void Resize(int width, int height, float fovy);
 
 	void MouseMoveRotate(Vector2D v2d);
-	void MouseMoveScale(Vector2D v2d);
+	double MouseMoveScale(Vector2D v2d);
 	void MouseMoveTranslate(Vector2D v2d);
 
 	void MousePress(Vector2D v2d, Vector3D v3d);

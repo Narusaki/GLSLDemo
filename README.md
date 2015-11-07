@@ -6,6 +6,8 @@ This code loads a WaveFront .obj models and manipulates it. The basic operations
 * Left mouse + drag: Roate.
 * Middle mouse + drag: Translate.
 * Right mouse + drag: Zoom.
+* 's' key: smooth/flat mode siwthc.
+* 'd' key: wireframe on/of.
 
 ## Environment & Dependencies
 This code has been tested under MSVC 2013 under Windows 7/8.1 and should work on other Windows platforms. 

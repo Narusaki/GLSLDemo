@@ -17,7 +17,7 @@
 using namespace std;
 
 enum VAO_IDs { Model1, NumVAOs };
-enum Buffer_IDs { Vertices1, Faces1, Normals1, NumBuffers };
+enum Buffer_IDs { Vertices1, Faces1, Normals1, FaceVerts1, FaceNormals1, NumBuffers };
 enum Attrib_IDs { vPosition = 0, vNormal = 1 };
 GLuint VAOs[NumVAOs];
 GLuint Buffers[NumBuffers];
@@ -25,11 +25,23 @@ const GLuint NumVertices = 6;
 
 int winHandle = -1;
 GLint mvMatrixLoc, projMatrixLoc, scaleMatrixLoc;
+GLint meshColorLoc;
+GLint lightPosLoc;
+GLfloat LightPos[] = { 0.0, 0.0, 3.0 };
 GLfloat zTheta = 0.0;
 GLfloat projMatrix[16], scaleMatrix[16];
 
+bool dkey = false;
+bool showWire = false;
+GLfloat meshColor[3] = { 1.0, 1.0, 1.0 };
+GLfloat wireColor[3] = { 0.0, 0.0, 0.0 };
+const double DEPTHEPS = 0.001;
+
+bool skey = false;
+bool smooth = true;
+
 // input model
-Model model1;
+Model model;
 TrackBall *trackball;
 
 int mouseButton, mouseState;
@@ -51,21 +63,28 @@ void SetForModel(GLuint modelIndex, Model &model)
 {
 	glBindVertexArray(VAOs[modelIndex]);
 
-	glBindBuffer(GL_ARRAY_BUFFER, Buffers[modelIndex * 3 + 0]);
+	glBindBuffer(GL_ARRAY_BUFFER, Buffers[modelIndex * 5 + 0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * model.vertices.size(),
 		(GLfloat*)(&model.vertices[0]), GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffers[modelIndex * 3 + 1]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffers[modelIndex * 5 + 1]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * model.faces.size(),
 		(GLuint*)(&model.faces[0]), GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, Buffers[modelIndex * 3 + 2]);
+	glBindBuffer(GL_ARRAY_BUFFER, Buffers[modelIndex * 5 + 2]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * model.normals.size(),
 		(GLfloat*)(&model.normals[0]), GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, Buffers[modelIndex * 5 + 3]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * model.faceVerts.size(),
+		(GLfloat*)(&model.faceVerts[0]), GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, Buffers[modelIndex * 5 + 4]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * model.faceNormals.size(),
+		(GLfloat*)(&model.faceNormals[0]), GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ARRAY_BUFFER, Buffers[modelIndex*3+0]);
+	// default is smooth rendering
+	glBindBuffer(GL_ARRAY_BUFFER, Buffers[modelIndex * 5 + 0]);
 	glVertexAttribPointer(vPosition, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 	glEnableVertexAttribArray(vPosition);
 
-	glBindBuffer(GL_ARRAY_BUFFER, Buffers[modelIndex * 3 + 2]);
+	glBindBuffer(GL_ARRAY_BUFFER, Buffers[modelIndex * 5 + 2]);
 	glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 	glEnableVertexAttribArray(vNormal);
 }
@@ -85,7 +104,7 @@ void init(void)
 	glGenVertexArrays(NumVAOs, VAOs);
 	glGenBuffers(NumBuffers, Buffers);
 
-	SetForModel(0, model1);
+	SetForModel(0, model);
 
 	glClearColor(1.0, 1.0, 1.0, 1.0);
 
@@ -93,12 +112,12 @@ void init(void)
 	for (int i = 0; i < 16; ++i)
 		projMatrix[i] = (i / 4 == i % 4 ? 1.0 : 0.0);
 
-	scaleMatrix[0] = 1.0 / model1.scale;
-	scaleMatrix[5] = 1.0 / model1.scale;
-	scaleMatrix[10] = 1.0 / model1.scale;
-	scaleMatrix[12] = -model1.originX / model1.scale;
-	scaleMatrix[13] = -model1.originY / model1.scale;
-	scaleMatrix[14] = -model1.originZ / model1.scale;
+	scaleMatrix[0] = 1.0 / model.scale;
+	scaleMatrix[5] = 1.0 / model.scale;
+	scaleMatrix[10] = 1.0 / model.scale;
+	scaleMatrix[12] = -model.originX / model.scale;
+	scaleMatrix[13] = -model.originY / model.scale;
+	scaleMatrix[14] = -model.originZ / model.scale;
 	scaleMatrix[15] = 1.0;
 
 	mvMatrixLoc = glGetUniformLocation(program, "mvMatrix");
@@ -113,16 +132,16 @@ void init(void)
 	// set light parameters
 
 	GLfloat ambientLight[] = { 0.1, 0.1, 0.1 };
-	GLfloat diffuseLight[] = { 0.7, 0.7, 0.7 };
-	GLfloat specularLight[] = { 0.3, 0.3, 0.3 };
-	GLfloat LightPos[] = { 3.0, 3.0, 3.0 };
-	GLfloat shininess = 16.0;
-	GLfloat strength = 1.0;
+	GLfloat diffuseLight[] = { 0.6, 0.6, 0.6 };
+	GLfloat specularLight[] = { 0.2, 0.2, 0.2 };
+	GLfloat shininess = 1.0;
+	GLfloat strength = 0.00001;
 
+	meshColorLoc = glGetUniformLocation(program, "meshColor");
 	GLint ambientLoc = glGetUniformLocation(program, "Ambient");
 	GLint diffuseLoc = glGetUniformLocation(program, "Diffuse");
 	GLint specularLoc = glGetUniformLocation(program, "Specular");
-	GLint lightPosLoc = glGetUniformLocation(program, "LightPosition");
+	lightPosLoc = glGetUniformLocation(program, "LightPosition");
 	GLint shininessLoc = glGetUniformLocation(program, "Shininess");
 	GLint strengthLoc = glGetUniformLocation(program, "Strength");
 	GLint cAttenuation = glGetUniformLocation(program, "ConstantAttenuation");
@@ -150,8 +169,25 @@ void display(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glBindVertexArray(VAOs[Model1]);
-	/*glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);*/
-	glDrawElements(GL_TRIANGLES, model1.faces.size(), GL_UNSIGNED_INT, NULL);
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glUniform3fv(meshColorLoc, 1, meshColor);
+	glDepthRange(DEPTHEPS, 1.0);
+	if (smooth)
+		glDrawElements(GL_TRIANGLES, model.faces.size(), GL_UNSIGNED_INT, NULL);
+	else
+		glDrawArrays(GL_TRIANGLES, 0, model.faceVerts.size() / 3);
+
+	if (showWire)
+	{
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glUniform3fv(meshColorLoc, 1, wireColor);
+		glDepthRange(0.0, 1.0 - DEPTHEPS);
+		if (smooth)
+			glDrawElements(GL_TRIANGLES, model.faces.size(), GL_UNSIGNED_INT, NULL);
+		else
+			glDrawArrays(GL_TRIANGLES, 0, model.faceVerts.size() / 3);
+	}
 	glutSwapBuffers();
 	glutPostRedisplay();
 }
@@ -172,10 +208,64 @@ void keyboardFunc(unsigned char key, int x, int y)
 		glutDestroyWindow(winHandle);
 		exit(0);
 		break;
+	case 'd':
+	case 'D':
+		if (!dkey)
+		{
+			dkey = true;
+			showWire = !showWire;
+		}
+		break;
+	case 's':
+	case 'S':
+		if (!skey)
+		{
+			skey = true;
+			smooth = !smooth;
+
+			glBindVertexArray(VAOs[Model1]);
+			if (smooth)
+			{
+				glBindBuffer(GL_ARRAY_BUFFER, Buffers[Model1 * 5 + 0]);
+				glVertexAttribPointer(vPosition, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+				glEnableVertexAttribArray(vPosition);
+
+				glBindBuffer(GL_ARRAY_BUFFER, Buffers[Model1 * 5 + 2]);
+				glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+				glEnableVertexAttribArray(vNormal);
+			}
+			else
+			{
+				glBindBuffer(GL_ARRAY_BUFFER, Buffers[Model1 * 5 + 3]);
+				glVertexAttribPointer(vPosition, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+				glEnableVertexAttribArray(vPosition);
+
+				glBindBuffer(GL_ARRAY_BUFFER, Buffers[Model1 * 5 + 4]);
+				glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+				glEnableVertexAttribArray(vNormal);
+			}
+		}
+		break;
 	default:
 		break;
 	}
 	glutPostRedisplay();
+}
+
+void keyboardUpFunc(unsigned char key, int x, int y)
+{
+	switch (key)
+	{
+	case 'd':
+	case 'D':
+		if (dkey) dkey = false;
+		break;
+
+	case 's':
+	case 'S':
+		if (skey) skey = false;
+		break;
+	}
 }
 
 void mouseFunc(int button, int state, int x, int y)
@@ -211,13 +301,21 @@ void motionFunc(int x, int y)
 	if (mouseButton == GLUT_LEFT_BUTTON && mouseState == GLUT_DOWN)
 		trackball->MouseMoveRotate(Vector2D(x, y));
 	else if (mouseButton == GLUT_RIGHT_BUTTON && mouseState == GLUT_DOWN)
-		trackball->MouseMoveScale(Vector2D(x, y));
+	{
+		GLfloat scaleFactor = trackball->MouseMoveScale(Vector2D(x, y));
+		LightPos[0] *= scaleFactor;
+		LightPos[1] *= scaleFactor;
+		LightPos[2] *= scaleFactor;
+		glUniform3fv(lightPosLoc, 1, LightPos);
+	}
 	else if (mouseButton == GLUT_MIDDLE_BUTTON && mouseState == GLUT_DOWN)
 		trackball->MouseMoveTranslate(Vector2D(x, y));
 
 	trackball->mvMatrix[14] -= 2.0;
 	glUniformMatrix4fv(mvMatrixLoc, 1, GL_FALSE, trackball->mvMatrix);
 	trackball->mvMatrix[14] += 2.0;
+
+	glutPostRedisplay();
 }
 
 //---------------------------------------------------------------------
@@ -232,7 +330,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	model1.LoadModel(argv[1]);
+	model.LoadModel(argv[1]);
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
@@ -248,6 +346,7 @@ int main(int argc, char** argv)
 	init();
 	glutDisplayFunc(display);
 	glutKeyboardFunc(keyboardFunc);
+	glutKeyboardUpFunc(keyboardUpFunc);
 	glutReshapeFunc(reshapeFunc);
 	glutMouseFunc(mouseFunc);
 	glutMotionFunc(motionFunc);

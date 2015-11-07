@@ -5,6 +5,7 @@ in vec3 position;
 in vec3 normal;
 
 // light parameters
+uniform vec3 meshColor;
 uniform vec3 Ambient; 
 uniform vec3 Diffuse; 
 uniform vec3 Specular;
@@ -31,7 +32,7 @@ void main()
 	if (diffuse == 0.0) specular = 0.0;
 	else specular = pow(specular, Shininess) * Strength;
 
-	vec3 rgb = min(Ambient + Diffuse * diffuse * attenuation + Specular * specular * attenuation, vec3(1.0));
+	vec3 rgb = min(meshColor * (Ambient + Diffuse * diffuse * attenuation + Specular * specular * attenuation), vec3(1.0));
 	
 	fColor = vec4(rgb, 1.0);
 }

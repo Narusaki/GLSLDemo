@@ -26,18 +26,22 @@ void TrackBall::MouseMoveRotate(Vector2D v2d)
 	Vector3D axis = prevPoint3D ^ currentPoint3D;
 	if (axis.length() < 1e-7) return;
 	axis.normalize();
-	float angle = acos(prevPoint3D * currentPoint3D);
+	double acosAngle = prevPoint3D * currentPoint3D;
+	if (acosAngle > 1.0) acosAngle = 1.0;
+	else if (acosAngle < -1.0) acosAngle = -1.0;
+	float angle = acos(acosAngle);
 	rotate(axis, 2.0 * angle);
 	prevPoint2D = currentPoint2D;
 	prevPoint3D = currentPoint3D;
 }
 
-void TrackBall::MouseMoveScale(Vector2D v2d)
+double TrackBall::MouseMoveScale(Vector2D v2d)
 {
 	Vector2D currentPoint2D = v2d;
 	float scaleFactor = exp(-(currentPoint2D - prevPoint2D).y / 100.0);
 	scale(scaleFactor);
 	prevPoint2D = currentPoint2D;
+	return scaleFactor;
 }
 
 void TrackBall::MouseMoveTranslate(Vector2D v2d)
@@ -45,7 +49,6 @@ void TrackBall::MouseMoveTranslate(Vector2D v2d)
 	Vector2D currentPoint2D = v2d;
 	Vector2D shift2D = zoomCenter.z * (currentPoint2D - prevPoint2D) * tan(fovy / 180.0 * PI / 2.0) / height;
 	shift2D.y = -shift2D.y;
-	std::cout << zoomCenter << std::endl;
 	translate(Vector3D(-shift2D.x, -shift2D.y, 0.0));
 	prevPoint2D = currentPoint2D;
 }

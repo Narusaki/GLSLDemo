@@ -23,6 +23,9 @@ public:
 	std::vector<GLuint> texcoords;
 	std::vector<GLfloat> normals;
 
+	std::vector<GLfloat> faceVerts;
+	std::vector<GLfloat> faceNormals;
+
 	double scale;
 	double originX, originY, originZ;
 };
