@@ -79,13 +79,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="LoadShaders.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="model.cpp" />
+    <ClCompile Include="trackball.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Geometry.h" />
     <ClInclude Include="LoadShaders.h" />
     <ClInclude Include="model.h" />
+    <ClInclude Include="trackball.h" />
     <ClInclude Include="vgl.h" />
   </ItemGroup>
   <ItemGroup>

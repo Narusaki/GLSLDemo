@@ -12,11 +12,12 @@
 #include <string>
 
 #include <cmath>
+#include "trackball.h"
 
 using namespace std;
 
-enum VAO_IDs { Model1, Model2, NumVAOs };
-enum Buffer_IDs { Vertices1, Faces1, Normals1, Vertices2, Faces2, Normals2, NumBuffers };
+enum VAO_IDs { Model1, NumVAOs };
+enum Buffer_IDs { Vertices1, Faces1, Normals1, NumBuffers };
 enum Attrib_IDs { vPosition = 0, vNormal = 1 };
 GLuint VAOs[NumVAOs];
 GLuint Buffers[NumBuffers];
@@ -25,10 +26,13 @@ const GLuint NumVertices = 6;
 int winHandle = -1;
 GLint mvMatrixLoc, projMatrixLoc, scaleMatrixLoc;
 GLfloat zTheta = 0.0;
-GLfloat mvMatrix[16], projMatrix[16], scaleMatrix[16];
+GLfloat projMatrix[16], scaleMatrix[16];
 
 // input model
-Model model1, model2;
+Model model1;
+TrackBall *trackball;
+
+int mouseButton, mouseState;
 
 void constructPerspectiveMatrix(GLfloat fovy, GLfloat aspect, GLfloat zNear, GLfloat zFar, GLfloat *m)
 {
@@ -82,30 +86,27 @@ void init(void)
 	glGenBuffers(NumBuffers, Buffers);
 
 	SetForModel(0, model1);
-	if (!model2.vertices.empty()) SetForModel(1, model2);
-	glBindVertexArray(VAOs[Model1]);
 
 	glClearColor(1.0, 1.0, 1.0, 1.0);
 
+	trackball = new TrackBall(640, 480, 45.0);
 	for (int i = 0; i < 16; ++i)
-	{
-		mvMatrix[i] = (i / 4 == i % 4 ? 1.0 : 0.0);
 		projMatrix[i] = (i / 4 == i % 4 ? 1.0 : 0.0);
-		if (i >= 9) continue;
-	}
 
 	scaleMatrix[0] = 1.0 / model1.scale;
 	scaleMatrix[5] = 1.0 / model1.scale;
 	scaleMatrix[10] = 1.0 / model1.scale;
 	scaleMatrix[12] = -model1.originX / model1.scale;
 	scaleMatrix[13] = -model1.originY / model1.scale;
-	scaleMatrix[14] = -model1.originZ / model1.scale - 4.0;
+	scaleMatrix[14] = -model1.originZ / model1.scale;
 	scaleMatrix[15] = 1.0;
 
 	mvMatrixLoc = glGetUniformLocation(program, "mvMatrix");
 	projMatrixLoc = glGetUniformLocation(program, "projMatrix");
 	scaleMatrixLoc = glGetUniformLocation(program, "scaleMatrix");
-	glUniformMatrix4fv(mvMatrixLoc, 1, GL_FALSE, mvMatrix);
+	trackball->mvMatrix[14] -= 2.0;
+	glUniformMatrix4fv(mvMatrixLoc, 1, GL_FALSE, trackball->mvMatrix);
+	trackball->mvMatrix[14] += 2.0;
 	glUniformMatrix4fv(projMatrixLoc, 1, GL_FALSE, projMatrix);
 	glUniformMatrix4fv(scaleMatrixLoc, 1, GL_FALSE, scaleMatrix);
 
@@ -138,6 +139,7 @@ void init(void)
 	glUniform1f(cAttenuation, 1.0); glUniform1f(bAttenuation, 0.0005); glUniform1f(aAttenuation, 0.0005);
 
 	glEnable(GL_DEPTH_TEST);
+
 }
 //---------------------------------------------------------------------
 //
@@ -147,13 +149,7 @@ void display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	zTheta += 0.01;
-	mvMatrix[0] = cos(zTheta); mvMatrix[1] = sin(zTheta);
-	mvMatrix[4] = -sin(zTheta); mvMatrix[5] = cos(zTheta);
-
-	glUniformMatrix4fv(mvMatrixLoc, 1, GL_FALSE, mvMatrix);
-
-	/*glBindVertexArray(VAOs[Model1]);*/
+	glBindVertexArray(VAOs[Model1]);
 	/*glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);*/
 	glDrawElements(GL_TRIANGLES, model1.faces.size(), GL_UNSIGNED_INT, NULL);
 	glutSwapBuffers();
@@ -165,6 +161,7 @@ void reshapeFunc(int width, int height)
 	constructPerspectiveMatrix(45.0, (GLfloat)width / (GLfloat)height, 0.1, 1000.0, projMatrix);
 	glUniformMatrix4fv(projMatrixLoc, 1, GL_FALSE, projMatrix);
 	glViewport(0, 0, width, height);
+	trackball->Resize(width, height, 45.0);
 }
 
 void keyboardFunc(unsigned char key, int x, int y)
@@ -175,82 +172,52 @@ void keyboardFunc(unsigned char key, int x, int y)
 		glutDestroyWindow(winHandle);
 		exit(0);
 		break;
-	case '1':
-		glBindVertexArray(VAOs[Model1]);
-// 		glBindBuffer(GL_ARRAY_BUFFER, Buffers[Vertices1]);
-// 		glVertexAttribPointer(vPosition, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-// 		glEnableVertexAttribArray(vPosition);
-// 
-// 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffers[Faces1]);
-// 
-// 		glBindBuffer(GL_ARRAY_BUFFER, Buffers[Normals1]);
-// 		glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-// 		glEnableVertexAttribArray(vNormal);
-
-		scaleMatrix[0] = 1.0 / model1.scale;
-		scaleMatrix[5] = 1.0 / model1.scale;
-		scaleMatrix[10] = 1.0 / model1.scale;
-		scaleMatrix[12] = -model1.originX / model1.scale;
-		scaleMatrix[13] = -model1.originY / model1.scale;
-		scaleMatrix[14] = -model1.originZ / model1.scale - 4.0;
-		scaleMatrix[15] = 1.0;
-		glUniformMatrix4fv(scaleMatrixLoc, 1, GL_FALSE, scaleMatrix);
-		break;
-	case '2':
-		if (model2.vertices.empty()) return;
-		glBindVertexArray(VAOs[Model2]);
-// 		glBindBuffer(GL_ARRAY_BUFFER, Buffers[Vertices2]);
-// 		glVertexAttribPointer(vPosition, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-// 		glEnableVertexAttribArray(vPosition);
-// 
-// 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffers[Faces2]);
-// 
-// 		glBindBuffer(GL_ARRAY_BUFFER, Buffers[Normals2]);
-// 		glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-// 		glEnableVertexAttribArray(vNormal);
-
-		scaleMatrix[0] = 1.0 / model2.scale;
-		scaleMatrix[5] = 1.0 / model2.scale;
-		scaleMatrix[10] = 1.0 / model2.scale;
-		scaleMatrix[12] = -model2.originX / model2.scale;
-		scaleMatrix[13] = -model2.originY / model2.scale;
-		scaleMatrix[14] = -model2.originZ / model2.scale - 4.0;
-		scaleMatrix[15] = 1.0;
-		glUniformMatrix4fv(scaleMatrixLoc, 1, GL_FALSE, scaleMatrix);
-		break;
 	default:
 		break;
 	}
 	glutPostRedisplay();
 }
 
-void specialFunc(int key, int x, int y)
-{
-	int mod = glutGetModifiers();
-	if (mod != GLUT_ACTIVE_SHIFT && mod != GLUT_ACTIVE_ALT && mod != GLUT_ACTIVE_CTRL)
-	{
-		glutAttachMenu(GLUT_RIGHT_BUTTON);
-	}
-	else
-	{
-		glutDetachMenu(GLUT_RIGHT_BUTTON);
-	}
-}
-
-void specialUpFunc(int key, int x, int y)
-{
-	glutAttachMenu(GLUT_RIGHT_BUTTON);
-}
-
 void mouseFunc(int button, int state, int x, int y)
 {
-	
+	mouseButton = button;
+	mouseState = state;
+	if (mouseButton == GLUT_LEFT_BUTTON && mouseState == GLUT_DOWN)
+		trackball->MousePress(Vector2D(x, y), Vector3D());
+	else if ((mouseButton == GLUT_RIGHT_BUTTON || mouseButton == GLUT_MIDDLE_BUTTON) && mouseState == GLUT_DOWN)
+	{
+		int viewport[16];
+		glGetIntegerv(GL_VIEWPORT, viewport);
+		GLfloat z;
+		glReadPixels(x, viewport[3] - y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &z);
+		if (z == 1.0)
+		{
+			mouseButton = -1; return;
+		}
+		double mvMatrix[16], projMatrixd[16];
+		memset(mvMatrix, 0, 16 * sizeof(double));
+		mvMatrix[0] = 1.0; mvMatrix[5] = 1.0; mvMatrix[10] = 1.0; mvMatrix[15] = 1.0;
+		for (int i = 0; i < 16; ++i) projMatrixd[i] = projMatrix[i];
+		if (mouseButton == GLUT_RIGHT_BUTTON) mvMatrix[14] = -2.0;
+		Vector3D obj;
+		gluUnProject(x, viewport[3] - y, z, mvMatrix, projMatrixd, viewport, &obj.x, &obj.y, &obj.z);
+		trackball->MousePress(Vector2D(x, y), obj);
+	}
+		
 }
 
-void menu(int item)
+void motionFunc(int x, int y)
 {
-	keyboardFunc(std::to_string(item).c_str()[0], 0, 0);
-	/*glutPostRedisplay();*/
+	if (mouseButton == GLUT_LEFT_BUTTON && mouseState == GLUT_DOWN)
+		trackball->MouseMoveRotate(Vector2D(x, y));
+	else if (mouseButton == GLUT_RIGHT_BUTTON && mouseState == GLUT_DOWN)
+		trackball->MouseMoveScale(Vector2D(x, y));
+	else if (mouseButton == GLUT_MIDDLE_BUTTON && mouseState == GLUT_DOWN)
+		trackball->MouseMoveTranslate(Vector2D(x, y));
+
+	trackball->mvMatrix[14] -= 2.0;
+	glUniformMatrix4fv(mvMatrixLoc, 1, GL_FALSE, trackball->mvMatrix);
+	trackball->mvMatrix[14] += 2.0;
 }
 
 //---------------------------------------------------------------------
@@ -261,12 +228,11 @@ int main(int argc, char** argv)
 {
 	if (argc < 2)
 	{
-		cout << "USAGE: [.exe] [inputModel1] [optional: inputModel2]" << endl;
+		cout << "USAGE: [.exe] [inputModel1]" << endl;
 		return -1;
 	}
 
 	model1.LoadModel(argv[1]);
-	if (argc >= 3) model2.LoadModel(argv[2]);
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
@@ -282,14 +248,9 @@ int main(int argc, char** argv)
 	init();
 	glutDisplayFunc(display);
 	glutKeyboardFunc(keyboardFunc);
-	glutSpecialFunc(specialFunc);
-	glutSpecialUpFunc(specialUpFunc);
 	glutReshapeFunc(reshapeFunc);
-
-	glutCreateMenu(menu);
-	for (int i = 1; i < argc; ++i)
-		glutAddMenuEntry(argv[i], i);
-	glutAttachMenu(GLUT_RIGHT_BUTTON);
+	glutMouseFunc(mouseFunc);
+	glutMotionFunc(motionFunc);
 	
 	glutMainLoop();
 }

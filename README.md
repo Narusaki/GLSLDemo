@@ -2,7 +2,10 @@
 A GLSL demo under MSVC 2013.
 
 ## Functionalities
-This code load one or two WaveFront .obj models and disply them.
+This code loads a WaveFront .obj models and manipulates it. The basic operations are as follow:
+* Left mouse + drag: Roate.
+* Middle mouse + drag: Translate.
+* Right mouse + drag: Zoom.
 
 ## Environment & Dependencies
 This code has been tested under MSVC 2013 under Windows 7/8.1 and should work on other Windows platforms. 
